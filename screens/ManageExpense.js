@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect } from "react";
+import { useContext, useLayoutEffect, useState } from "react";
 import { View, TextInput, StyleSheet } from "react-native";
 
 import ExpenseForm from "../components/ManageExpense/ExpenseForm";
@@ -6,8 +6,10 @@ import IconButton from "../components/ExpensesOutput/UI/IconButton";
 import { GlobalStyles } from "../constants/styles";
 import { ExpensesContext } from "../store/expenses-context";
 import { storeExpense, updateExpense, deleteExpense } from "../util/http";
+import LoadingOverlay from "../components/UI/LoadingOverlay";
 
 function ManageExpense({ route, navigation }) {
+  const [isFetching, setIsFetching] = useState(false);
   const expenseCtx = useContext(ExpensesContext);
 
   const editedExpenseId = route.params?.expenseId;
@@ -24,7 +26,9 @@ function ManageExpense({ route, navigation }) {
   }, [navigation, isEditing]);
 
   async function deleteExpenseHandler() {
+    setIsFetching(true);
     await deleteExpense(editedExpenseId);
+    // setIsFetching(false);
     expenseCtx.deleteExpense(editedExpenseId);
     navigation.goBack();
   }
@@ -36,12 +40,20 @@ function ManageExpense({ route, navigation }) {
   async function confirmHandler(expenseData) {
     if (isEditing) {
       expenseCtx.updateExpense(editedExpenseId, expenseData);
+      setIsFetching(true);
       await updateExpense(editedExpenseId, expenseData);
+      // setIsFetching(false);
     } else {
+      setIsFetching(true);
       const id = await storeExpense(expenseData);
       expenseCtx.addExpense({ ...expenseData, id: id });
+      // setIsFetching(false);
     }
     navigation.goBack();
+  }
+
+  if (isFetching) {
+    return <LoadingOverlay />;
   }
 
   return (
